@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shortly - Link Shortening</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .link-card {
+      transition: all 0.3s ease;
+    }
+    .link-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .copy-btn {
+      transition: background-color 0.3s ease;
+    }
+    .copy-btn.copied {
+      background-color: #3b3054;
+    }
+    .error-input {
+      border-color: #f46363;
+    }
+    .error-message {
+      color: #f46363;
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .stats-card {
+        position: relative;
+      }
+      .stats-card::after {
+        content: '';
+        position: absolute;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 8px;
+        height: 40px;
+        background-color: #2acfcf;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans text-gray-800 overflow-x-hidden">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center px-6 py-4 md:px-20">
+    <div class="flex items-center space-x-10">
+      <h1 class="text-2xl font-bold">Shortly</h1>
+      <nav class="hidden md:flex space-x-6 text-gray-600">
+        <a href="#" class="hover:text-gray-900">Features</a>
+        <a href="#" class="hover:text-gray-900">Pricing</a>
+        <a href="#" class="hover:text-gray-900">Resources</a>
+      </nav>
+    </div>
+    <div class="hidden md:flex space-x-4 items-center">
+      <a href="#" class="text-gray-600 hover:text-gray-900">Login</a>
+      <a href="#" class="bg-cyan-500 hover:bg-cyan-400 text-white px-4 py-2 rounded-full transition">Sign Up</a>
+    </div>
+    <button class="md:hidden" id="mobile-menu-btn">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden fixed inset-0 bg-violet-950 z-50 flex flex-col items-center justify-center space-y-8 text-white">
+    <button id="close-menu-btn" class="absolute top-6 right-6">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+    <a href="#" class="text-xl">Features</a>
+    <a href="#" class="text-xl">Pricing</a>
+    <a href="#" class="text-xl">Resources</a>
+    <div class="w-full h-px bg-gray-400 my-4"></div>
+    <a href="#" class="text-xl">Login</a>
+    <a href="#" class="bg-cyan-500 text-white px-8 py-3 rounded-full text-xl w-3/4 text-center">Sign Up</a>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="text-center md:text-left md:flex md:justify-between items-center px-4 md:px-20 py-8 md:py-12 bg-white overflow-hidden">
+    <div class="md:w-1/2 space-y-4 mb-8 md:mb-0 order-2 md:order-1">
+        <h2 class="text-3xl md:text-5xl font-bold leading-tight">More than just shorter links</h2>
+        <p class="text-gray-500 md:text-lg">Build your brand's recognition and get detailed insights on how your links are performing.</p>
+        <a href="#shortener" class="inline-block bg-cyan-500 hover:bg-cyan-400 text-white px-6 py-2 md:px-8 md:py-3 rounded-full mt-4 transition text-sm md:text-base">Get Started</a>
+    </div>
+    <div class="md:w-1/2 md:mt-0 md:ml-10 order-1 md:order-2">
+        <img src="/images/illustration-working.svg" alt="Person working at computer" 
+             class="w-full max-w-md mx-auto md:max-w-none md:ml-auto md:translate-x-20"
+             style="max-height: 300px; object-fit: contain;">
+    </div>
+  </section>
+
+  <!-- Link Shortener Form -->
+  <section id="shortener" class="bg-gray-100 px-6 py-16 md:px-20">
+    <div class="container mx-auto">
+      <div class="bg-violet-800 p-4 md:p-8 rounded-lg flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 relative -translate-y-24">
+        <div class="w-full relative">
+          <input id="link-input" type="text" placeholder="Shorten a link here..." class="w-full p-3 md:p-4 rounded-md outline-none" />
+          <p id="error-message" class="error-message absolute text-sm italic mt-1">Please add a link</p>
+        </div>
+        <button id="shorten-btn" class="bg-cyan-500 hover:bg-cyan-400 text-white px-6 py-3 md:px-8 md:py-4 rounded-md w-full md:w-auto font-bold transition">Shorten It!</button>
+      </div>
+      
+      <!-- Results -->
+      <div id="results" class="space-y-4 -mt-16"></div>
+    </div>
+  </section>
+
+  <!-- Advanced Statistics -->
+  <section class="bg-gray-100 text-center px-6 py-16 md:px-20">
+    <div class="container mx-auto">
+      <h3 class="text-2xl md:text-3xl font-bold mb-4">Advanced Statistics</h3>
+      <p class="text-gray-500 mb-12 max-w-md mx-auto md:max-w-lg md:text-lg">Track how your links are performing across the web with our advanced statistics dashboard.</p>
+
+      <div class="relative">
+        <div class="hidden md:block absolute top-1/2 left-0 right-0 h-2 bg-cyan-500"></div>
+        <div class="space-y-20 md:flex md:space-y-0 md:space-x-6 md:items-start">
+          <div class="bg-white p-6 md:p-8 rounded-lg shadow-md stats-card relative z-10">
+            <div class="bg-violet-800 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto -translate-y-12">
+              <img src="/images/icon-brand-recognition.svg" alt="Brand Icon" class="w-10"/>
+            </div>
+            <h4 class="font-bold text-lg md:text-xl mb-2">Brand Recognition</h4>
+            <p class="text-gray-500 md:text-base">Boost your brand recognition with each click. Branded links help instill confidence in your content.</p>
+          </div>
+
+          <div class="bg-white p-6 md:p-8 rounded-lg shadow-md stats-card relative z-10 md:mt-10">
+            <div class="bg-violet-800 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto -translate-y-12">
+              <img src="/images/icon-detailed-records.svg" alt="Records Icon" class="w-10"/>
+            </div>
+            <h4 class="font-bold text-lg md:text-xl mb-2">Detailed Records</h4>
+            <p class="text-gray-500 md:text-base">Gain insights into who is clicking your links. Knowing when and where helps inform better decisions.</p>
+          </div>
+
+          <div class="bg-white p-6 md:p-8 rounded-lg shadow-md stats-card relative z-10 md:mt-20">
+            <div class="bg-violet-800 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto -translate-y-12">
+              <img src="/images/icon-fully-customizable.svg" alt="Custom Icon" class="w-10"/>
+            </div>
+            <h4 class="font-bold text-lg md:text-xl mb-2">Fully Customizable</h4>
+            <p class="text-gray-500 md:text-base">Improve brand awareness and content discoverability through customizable links and engagement.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Boost Section -->
+  <section class="relative text-white text-center py-16 md:py-20 bg-violet-900">
+    <!-- Mobile Background (Shows on small screens) -->
+    <img src="/images/bg-boost-mobile.svg" alt="" 
+         class="md:hidden w-full h-full object-cover absolute inset-0 z-0">
+    
+    <!-- Desktop Background (Shows on md screens and up) -->
+    <img src="/images/bg-boost-desktop.svg" alt="" 
+         class="hidden md:block w-full h-full object-cover absolute inset-0 z-0">
+    
+    <div class="relative z-10 space-y-4">
+        <h3 class="text-2xl md:text-4xl font-bold">Boost your links today</h3>
+        <a href="#shortener" class="inline-block bg-cyan-500 hover:bg-cyan-400 text-white px-8 py-3 rounded-full font-bold transition">Get Started</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white px-6 py-12 md:px-20">
+    <div class="container mx-auto">
+      <div class="flex flex-col md:flex-row md:justify-between space-y-12 md:space-y-0">
+        <h1 class="text-2xl font-bold text-center md:text-left">Shortly</h1>
+        <div class="flex flex-col md:flex-row md:space-x-20 space-y-12 md:space-y-0 text-center md:text-left">
+          <div>
+            <h4 class="font-semibold mb-4">Features</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="#" class="hover:text-cyan-400 transition">Link Shortening</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Branded Links</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Analytics</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Resources</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="#" class="hover:text-cyan-400 transition">Blog</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Developers</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Support</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Company</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="#" class="hover:text-cyan-400 transition">About</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Our Team</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Careers</a></li>
+              <li><a href="#" class="hover:text-cyan-400 transition">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex justify-center md:justify-start space-x-4">
+          <a href="#" class="w-6 h-6 hover:text-cyan-400 transition"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="w-6 h-6 hover:text-cyan-400 transition"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="w-6 h-6 hover:text-cyan-400 transition"><i class="fab fa-pinterest"></i></a>
+          <a href="#" class="w-6 h-6 hover:text-cyan-400 transition"><i class="fab fa-instagram"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mobile menu toggle
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const closeMenuBtn = document.getElementById('close-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      });
+      
+      closeMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      });
+
+      // Load saved links from localStorage
+      loadSavedLinks();
+
+      // Shorten URL functionality
+      const shortenBtn = document.getElementById('shorten-btn');
+      const linkInput = document.getElementById('link-input');
+      const resultsContainer = document.getElementById('results');
+      const errorMessage = document.getElementById('error-message');
+
+      shortenBtn.addEventListener('click', shortenUrl);
+      linkInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          shortenUrl();
+        }
+      });
+
+      async function shortenUrl() {
+        const url = linkInput.value.trim();
+        
+        // Validate URL
+        if (!url) {
+          linkInput.classList.add('error-input');
+          errorMessage.style.display = 'block';
+          return;
+        }
+        
+        // Reset error state
+        linkInput.classList.remove('error-input');
+        errorMessage.style.display = 'none';
+        
+        // Show loading state
+        shortenBtn.disabled = true;
+        shortenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Shortening...';
+        
+        try {
+          // Using a reliable CORS proxy
+          const proxyUrl = 'https://api.allorigins.win/raw?url=';
+          const apiUrl = 'https://cleanuri.com/api/v1/shorten';
+          
+          const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `url=${encodeURIComponent(url)}`
+          });
+
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const data = await response.json();
+          
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          
+          // Create result card
+          const resultId = Date.now();
+          const resultCard = document.createElement('div');
+          resultCard.className = 'bg-white p-4 rounded-md shadow-sm link-card';
+          resultCard.dataset.id = resultId;
+          resultCard.innerHTML = `
+            <div class="md:flex md:items-center md:justify-between">
+              <div class="mb-3 md:mb-0 overflow-hidden text-ellipsis">
+                <p class="text-gray-800 truncate">${url}</p>
+              </div>
+              <div class="md:flex md:items-center md:space-x-4 space-y-3 md:space-y-0 border-t md:border-t-0 pt-3 md:pt-0">
+                <a href="${data.result_url}" target="_blank" class="text-cyan-500 hover:text-cyan-400 block md:inline">${data.result_url}</a>
+                <button class="copy-btn bg-cyan-500 hover:bg-cyan-400 text-white px-4 py-2 rounded-md w-full md:w-auto font-bold transition" data-url="${data.result_url}">
+                  Copy
+                </button>
+              </div>
+            </div>
+          `;
+          
+          // Prepend new result
+          resultsContainer.prepend(resultCard);
+          
+          // Save to localStorage
+          saveLink(resultId, url, data.result_url);
+          
+          // Reset form
+          linkInput.value = '';
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to shorten URL. Please try again with a valid URL.');
+        } finally {
+          shortenBtn.disabled = false;
+          shortenBtn.textContent = 'Shorten It!';
+        }
+      }
+
+      // Copy to clipboard
+      resultsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('copy-btn')) {
+          const url = e.target.dataset.url;
+          navigator.clipboard.writeText(url).then(() => {
+            // Update button state
+            const allCopyButtons = document.querySelectorAll('.copy-btn');
+            allCopyButtons.forEach(btn => {
+              btn.classList.remove('copied');
+              btn.textContent = 'Copy';
+            });
+            
+            e.target.classList.add('copied');
+            e.target.textContent = 'Copied!';
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+              e.target.classList.remove('copied');
+              e.target.textContent = 'Copy';
+            }, 3000);
+          });
+        }
+      });
+
+      // Save link to localStorage
+      function saveLink(id, originalUrl, shortUrl) {
+        const links = JSON.parse(localStorage.getItem('shortenedLinks') || '[]');
+        links.unshift({ id, originalUrl, shortUrl });
+        localStorage.setItem('shortenedLinks', JSON.stringify(links));
+      }
+
+      // Load saved links from localStorage
+      function loadSavedLinks() {
+        const links = JSON.parse(localStorage.getItem('shortenedLinks') || '[]');
+        links.forEach(link => {
+          const resultCard = document.createElement('div');
+          resultCard.className = 'bg-white p-4 rounded-md shadow-sm link-card';
+          resultCard.dataset.id = link.id;
+          resultCard.innerHTML = `
+            <div class="md:flex md:items-center md:justify-between">
+              <div class="mb-3 md:mb-0 overflow-hidden text-ellipsis">
+                <p class="text-gray-800 truncate">${link.originalUrl}</p>
+              </div>
+              <div class="md:flex md:items-center md:space-x-4 space-y-3 md:space-y-0 border-t md:border-t-0 pt-3 md:pt-0">
+                <a href="${link.shortUrl}" target="_blank" class="text-cyan-500 hover:text-cyan-400 block md:inline">${link.shortUrl}</a>
+                <button class="copy-btn bg-cyan-500 hover:bg-cyan-400 text-white px-4 py-2 rounded-md w-full md:w-auto font-bold transition" data-url="${link.shortUrl}">
+                  Copy
+                </button>
+              </div>
+            </div>
+          `;
+          resultsContainer.appendChild(resultCard);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
